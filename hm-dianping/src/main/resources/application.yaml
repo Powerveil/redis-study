@@ -3,15 +3,17 @@ server:
 spring:
   application:
     name: hmdp
+  profiles:
+    active: test
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC
-    username: root
-    password: root
+    url: jdbc:mysql://${power.mysql.ip}:${power.mysql.port}/${power.mysql.db}?useSSL=false&serverTimezone=UTC
+    username: ${power.mysql.username}
+    password: ${power.mysql.password}
   redis:
-    host: 192.168.18.100
-    port: 6379
-    password: 123456
+    host: ${power.redis.ip}
+    port: ${power.redis.port}
+#    password: 123456
     lettuce:
       pool:
         max-active: 10
