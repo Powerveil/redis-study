@@ -46,6 +46,18 @@ public class CacheClient {
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(redisData));
     }
 
+    /**
+     * 缓存穿透
+     * @param keyPrefix   key前缀
+     * @param id          id
+     * @param type        返回类类型
+     * @param dbFallback  数据库回调方法
+     * @param time        过期时间
+     * @param unit        时间单位
+     * @return            返回值
+     * @param <R>         返回类型
+     * @param <T>         id类型
+     */
     public <R, T> R queryWithPassThrough(String keyPrefix, T id, Class<R> type, Function<T, R> dbFallback, Long time, TimeUnit unit) {
         // 1.从redis查询商铺缓存
         String key = keyPrefix + id;
@@ -56,7 +68,7 @@ public class CacheClient {
             return JSONUtil.toBean(json, type);
         }
         // 判断命中的是否是空值
-        if (!Objects.isNull(json)) {
+        if (Objects.nonNull(json)) {
             // 返回一个错误信息
             return null;
         }
@@ -86,7 +98,26 @@ public class CacheClient {
     }
 
 
-    public <R, T> R queryWithLogicalExpire(String keyPrefix, T id, Class<R> type, Function<T, R> dbFallback, Long time, TimeUnit unit) {
+    /**
+     * 缓存击穿
+     * @param keyPrefix      key前缀
+     * @param lockKeyPrefix  lockKey前缀
+     * @param id             id
+     * @param type           返回类类型
+     * @param dbFallback     数据库回调方法
+     * @param time           过期时间
+     * @param unit           时间单位
+     * @return               返回值
+     * @param <R>            返回类型
+     * @param <T>            id类型
+     */
+    public <R, T> R queryWithLogicalExpire(String keyPrefix,
+                                           String lockKeyPrefix,
+                                           T id,
+                                           Class<R> type,
+                                           Function<T, R> dbFallback,
+                                           Long time,
+                                           TimeUnit unit) {
         // 1.从redis查询商铺缓存
         String key = keyPrefix + id;
         String json = stringRedisTemplate.opsForValue().get(key);
@@ -108,7 +139,7 @@ public class CacheClient {
         // 5.2.已过期，需要缓存重建
         // 6.缓存重建
         // 6.1.获取互斥锁
-        String lockKey = RedisConstants.LOCK_SHOP_KEY + id;
+        String lockKey = lockKeyPrefix + id;
         boolean isLock = tryLock(lockKey);
         // 6.2.判断是否获取锁成功
         if (isLock) {
