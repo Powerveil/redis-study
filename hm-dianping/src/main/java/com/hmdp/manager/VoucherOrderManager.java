@@ -68,7 +68,7 @@ public class VoucherOrderManager {
         // 获取锁
         ILock iLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
         // 判断是否获取锁成功
-        boolean isLock = iLock.tryLock(5000L);
+        boolean isLock = iLock.tryLock(15L);
         if (!isLock) {
             // 获取锁失败，返回错误或重试
             return Result.fail("一人只能一单");
