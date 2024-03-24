@@ -13,7 +13,7 @@ spring:
   redis:
     host: ${power.redis.ip}
     port: ${power.redis.port}
-#    password: 123456
+    password: ${power.redis.password}
     lettuce:
       pool:
         max-active: 10

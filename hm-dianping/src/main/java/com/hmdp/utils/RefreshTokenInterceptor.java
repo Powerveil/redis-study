@@ -46,7 +46,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         UserHolder.saveUser(userDTO);
         // TODO 7.刷新token有效期
         Long expire = stringRedisTemplate.opsForValue().getOperations().getExpire(tokenKey);
-        System.out.println("当前有效期：" + expire);
+//        System.out.println("当前有效期：" + expire);
         // 判断是否需要刷新token有效期
         if (RedisConstants.REFRESH_TOKEN_TTL.compareTo(expire) >= 0) {
             // 有效期已经更新
