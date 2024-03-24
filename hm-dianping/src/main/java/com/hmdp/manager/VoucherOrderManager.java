@@ -9,11 +9,10 @@ import com.hmdp.mapper.SeckillVoucherMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.hmdp.service.IVoucherService;
-import com.hmdp.utils.RedisConstants;
-import com.hmdp.utils.RedisIdWorker;
-import com.hmdp.utils.UserHolder;
+import com.hmdp.utils.*;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +43,8 @@ public class VoucherOrderManager {
 
     @Autowired
     private RedisIdWorker redisIdWorker;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     public Result seckillVoucher(Long voucherId) {
         // 1.查询优惠卷
@@ -64,11 +65,27 @@ public class VoucherOrderManager {
         }
 
         Long userId = UserHolder.getUser().getId();
-        synchronized (userId.toString().intern()) {
-            // 获取代理对象（事务）
+        // 获取锁
+        ILock iLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+        // 判断是否获取锁成功
+        boolean isLock = iLock.tryLock(5000L);
+        if (!isLock) {
+            // 获取锁失败，返回错误或重试
+            return Result.fail("一人只能一单");
+        }
+
+        try {
             VoucherOrderManager voucherOrderManager = (VoucherOrderManager) AopContext.currentProxy();
             return voucherOrderManager.createVoucherOrder(voucherId);
+        } finally {
+            // 释放锁
+            iLock.unlock();
         }
+//        synchronized (userId.toString().intern()) {
+//            // 获取代理对象（事务）
+//            VoucherOrderManager voucherOrderManager = (VoucherOrderManager) AopContext.currentProxy();
+//            return voucherOrderManager.createVoucherOrder(voucherId);
+//        }
     }
 
     @Transactional
