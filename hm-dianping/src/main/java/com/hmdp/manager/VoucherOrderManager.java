@@ -10,6 +10,8 @@ import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.hmdp.service.IVoucherService;
 import com.hmdp.utils.*;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @ClassName VoucherOrderManager
@@ -46,6 +49,9 @@ public class VoucherOrderManager {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    @Autowired
+    private RedissonClient redissonClient;
+
     public Result seckillVoucher(Long voucherId) {
         // 1.查询优惠卷
         SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
@@ -66,9 +72,13 @@ public class VoucherOrderManager {
 
         Long userId = UserHolder.getUser().getId();
         // 获取锁
-        ILock iLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+//        ILock iLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
         // 判断是否获取锁成功
-        boolean isLock = iLock.tryLock(15L);
+//        boolean isLock = iLock.tryLock(15L);
+
+        RLock rLock = redissonClient.getLock("order:" + userId);
+        // 无参是获取失败不等待，锁的释放时间是30s
+        boolean isLock = rLock.tryLock();
         if (!isLock) {
             // 获取锁失败，返回错误或重试
             return Result.fail("一人只能一单");
@@ -79,7 +89,8 @@ public class VoucherOrderManager {
             return voucherOrderManager.createVoucherOrder(voucherId);
         } finally {
             // 释放锁
-            iLock.unlock();
+//            iLock.unlock();
+            rLock.unlock();
         }
 //        synchronized (userId.toString().intern()) {
 //            // 获取代理对象（事务）
