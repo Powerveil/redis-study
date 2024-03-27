@@ -8,6 +8,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @ClassName RedissonTest
@@ -22,17 +23,37 @@ public class RedissonTest {
 
     @Resource
     private RedissonClient redissonClient;
+
+    @Resource
+    private RedissonClient redissonClient1;
+
+    @Resource
+    private RedissonClient redissonClient2;
+
+    @Resource
+    private RedissonClient redissonClient3;
+
     private RLock lock;
 
     @BeforeEach
     void setUp() {
-        lock = redissonClient.getLock("order");
+//        lock = redissonClient.getLock("order");
+
+        RLock lock1 = redissonClient1.getLock("order");
+        RLock lock2 = redissonClient2.getLock("order");
+        RLock lock3 = redissonClient3.getLock("order");
+
+        // 创建联锁 multiLock
+        // 用谁的redissonClient调用都一样，都是new
+        lock = redissonClient.getMultiLock(lock1, lock2, lock3);
     }
 
     @Test
-    void method1() {
+    void method1() throws InterruptedException {
         // 尝试获取锁
-        boolean isLock = lock.tryLock();
+//        boolean isLock = lock.tryLock(100L, 1000L,TimeUnit.SECONDS);
+        boolean isLock = lock.tryLock(1L, TimeUnit.SECONDS);
+        Thread.sleep(50 * 1000);
         if (!isLock) {
             log.error("获取锁失败 。。。。 1");
             return;
@@ -48,9 +69,10 @@ public class RedissonTest {
     }
 
     @Test
-    void method2() {
+    void method2() throws InterruptedException {
         // 尝试获取锁
         boolean isLock = lock.tryLock();
+//        boolean isLock = lock.tryLock(100L, 1000L,TimeUnit.SECONDS);
         if (!isLock) {
             log.error("获取锁失败 。。。。 2");
             return;

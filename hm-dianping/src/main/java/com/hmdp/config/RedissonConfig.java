@@ -24,9 +24,49 @@ public class RedissonConfig {
     @Value("${power.redis.password}")
     private String REDIS_PASSWORD;
 
+
+    @Value("${power.redis.port1}")
+    private String REDIS_PORT1;
+    @Value("${power.redis.port2}")
+    private String REDIS_PORT2;
+    @Value("${power.redis.port3}")
+    private String REDIS_PORT3;
+
     @Bean
     public RedissonClient redissonClient() {
         String connectionUrl = "redis://" + REDIS_IP + ":" + REDIS_PORT;
+        // 配置
+        Config config = new Config();
+        config.useSingleServer().setAddress(connectionUrl).setPassword(REDIS_PASSWORD);
+        // 创建RedissonClient对象
+        return Redisson.create(config);
+    }
+
+    @Bean
+    public RedissonClient redissonClient1() {
+        String connectionUrl = "redis://" + REDIS_IP + ":" + REDIS_PORT1;
+        // 配置
+        Config config = new Config();
+        config.useSingleServer().setAddress(connectionUrl).setPassword(REDIS_PASSWORD);
+        // 创建RedissonClient对象
+        return Redisson.create(config);
+    }
+
+
+    @Bean
+    public RedissonClient redissonClient2() {
+        String connectionUrl = "redis://" + REDIS_IP + ":" + REDIS_PORT2;
+        // 配置
+        Config config = new Config();
+        config.useSingleServer().setAddress(connectionUrl).setPassword(REDIS_PASSWORD);
+        // 创建RedissonClient对象
+        return Redisson.create(config);
+    }
+
+
+    @Bean
+    public RedissonClient redissonClient3() {
+        String connectionUrl = "redis://" + REDIS_IP + ":" + REDIS_PORT3;
         // 配置
         Config config = new Config();
         config.useSingleServer().setAddress(connectionUrl).setPassword(REDIS_PASSWORD);
