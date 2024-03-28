@@ -2,8 +2,12 @@ package com.hmdp.controller;
 
 
 import com.hmdp.dto.Result;
+import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.Voucher;
+import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherService;
+import com.hmdp.constant.RedisConstants;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -23,6 +27,12 @@ public class VoucherController {
     @Resource
     private IVoucherService voucherService;
 
+    @Resource
+    private ISeckillVoucherService seckillVoucherService;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     /**
      * 新增普通券
      * @param voucher 优惠券信息
@@ -30,7 +40,19 @@ public class VoucherController {
      */
     @PostMapping
     public Result addVoucher(@RequestBody Voucher voucher) {
+        // 保存数据库
         voucherService.save(voucher);
+        // 保存秒杀信息
+        SeckillVoucher seckillVoucher = new SeckillVoucher();
+        seckillVoucher.setVoucherId(voucher.getId());
+        seckillVoucher.setStock(voucher.getStock());
+        seckillVoucher.setBeginTime(voucher.getBeginTime());
+        seckillVoucher.setEndTime(voucher.getEndTime());
+        seckillVoucherService.save(seckillVoucher);
+        // 保存秒杀坤村到redis中
+        stringRedisTemplate.opsForValue()
+                .set(RedisConstants.SECKILL_STOCK_KEY_PREFIX + voucher.getId(),
+                     String.valueOf(voucher.getStock()));
         return Result.ok(voucher.getId());
     }
 
