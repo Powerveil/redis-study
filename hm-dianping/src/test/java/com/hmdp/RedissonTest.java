@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @ClassName RedissonTest
@@ -51,6 +52,8 @@ public class RedissonTest {
     @Test
     void method1() throws InterruptedException {
         // 尝试获取锁
+        ReentrantLock lock1 = new ReentrantLock();
+//        lock1.tryLock()
 //        boolean isLock = lock.tryLock(100L, 1000L,TimeUnit.SECONDS);
         boolean isLock = lock.tryLock(1L, TimeUnit.SECONDS);
         Thread.sleep(50 * 1000);
