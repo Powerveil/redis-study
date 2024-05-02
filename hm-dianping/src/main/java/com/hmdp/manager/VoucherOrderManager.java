@@ -139,7 +139,13 @@ public class VoucherOrderManager {
 
         if (!SystemConstants.SECKILL_NO_PURCHASE.equals(result)) {
             // 2.1.不为0，代表没有购买资格
-            return Result.fail(SystemConstants.SECKILL_INSUFFICIENT_STOCK.equals(result) ? "库存不足": "不能重复下单");
+            String message = null;
+            if (SystemConstants.SECKILL_INSUFFICIENT_STOCK.equals(result)) {
+                message = "库存不足";
+            } else if (SystemConstants.SECKILL_PURCHASED.equals(result)) {
+                message = "不能重复下单";
+            }
+            return Result.fail(message);
         }
         // 2.2.为0，有购买资格，把下单信息保存到阻塞队列
         long orderId = redisIdWorker.nextId("order");

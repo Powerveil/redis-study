@@ -54,8 +54,8 @@ public class RedissonTest {
         // 尝试获取锁
         ReentrantLock lock1 = new ReentrantLock();
 //        lock1.tryLock()
-//        boolean isLock = lock.tryLock(100L, 1000L,TimeUnit.SECONDS);
-        boolean isLock = lock.tryLock(1L, TimeUnit.SECONDS);
+        boolean isLock = lock.tryLock(100L, 1000L,TimeUnit.SECONDS);
+//        boolean isLock = lock.tryLock(1L, TimeUnit.SECONDS);
         Thread.sleep(50 * 1000);
         if (!isLock) {
             log.error("获取锁失败 。。。。 1");
