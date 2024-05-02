@@ -157,10 +157,11 @@ public class BlogManager {
         // 3.根据用户id查询用户
         List<Long> ids = range.stream().map(Long::valueOf).collect(Collectors.toList());
         String join = StrUtil.join(",", ids);
+        String lastSql = String.format("ORDER BY FIELD(id,%s)", join);
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper
                 .in(User::getId, ids)
-                .last("ORDER BY FIELD(id," + join + ")");
+                .last(lastSql);
         List<User> users = userService.list(queryWrapper);
         List<UserDTO> userDTOS = BeanCopyUtils.copyBeanList(users, UserDTO.class);
         // 4.返回用户
