@@ -9,8 +9,10 @@ import com.hmdp.constant.SystemConstants;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.Blog;
+import com.hmdp.entity.Follow;
 import com.hmdp.entity.User;
 import com.hmdp.service.IBlogService;
+import com.hmdp.service.IFollowService;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.BeanCopyUtils;
 import com.hmdp.utils.UserHolder;
@@ -43,14 +45,30 @@ public class BlogManager {
     private IUserService userService;
 
     @Autowired
+    private IFollowService followService;
+
+    @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
     public Result saveBlog(Blog blog) {
-        // 获取登录用户
-        UserDTO user = UserHolder.getUser();
-        blog.setUserId(user.getId());
-        // 保存探店博文
-        blogService.save(blog);
+        // 1.获取登录用户
+        Long userId = UserHolder.getUser().getId();
+        blog.setUserId(userId);
+        // 2.保存探店博文
+        boolean isSuccess = blogService.save(blog);
+        if (isSuccess) {
+            // 3.查询笔记作者的所有粉丝
+            LambdaQueryWrapper<Follow> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Follow::getFollowUserId, userId);
+            List<Long> userIdList = followService.list(queryWrapper).stream()
+                    .map(Follow::getUserId)
+                    .collect(Collectors.toList());
+            // 4.推送笔记id给所有粉丝
+            for (Long funUserId : userIdList) {
+                String key = RedisConstants.FEED_KEY + funUserId;
+                stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
+            }
+        }
         // 返回id
         return Result.ok(blog.getId());
     }
