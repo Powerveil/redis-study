@@ -167,4 +167,13 @@ public class BlogManager {
         // 4.返回用户
         return Result.ok(userDTOS);
     }
+
+    public Result queryBlogByUserId(Integer current, Long id) {
+        // 根据用户查询
+        Page<Blog> page = blogService.query()
+                .eq("user_id", id).page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
+        // 获取当前页数据
+        List<Blog> records = page.getRecords();
+        return Result.ok(records);
+    }
 }
