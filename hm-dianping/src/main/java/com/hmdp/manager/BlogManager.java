@@ -1,10 +1,10 @@
 package com.hmdp.manager;
 
-import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.constant.RedisConstants;
+import com.hmdp.constant.SqlConstants;
 import com.hmdp.constant.SystemConstants;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.ScrollResult;
@@ -174,7 +174,7 @@ public class BlogManager {
         // 3.根据用户id查询用户
         List<Long> ids = range.stream().map(Long::valueOf).collect(Collectors.toList());
         String join = StrUtil.join(",", ids);
-        String lastSql = String.format("ORDER BY FIELD(id,%s)", join);
+        String lastSql = SqlConstants.splicing(SqlConstants.LAST_SQL_ORDER_BY_ID, join);
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper
                 .in(User::getId, ids)
@@ -223,9 +223,8 @@ public class BlogManager {
             }
         }
         // 5.根据id查询blog
-        // todo 带优化
         String join = StrUtil.join(",", blogIdList);
-        String lastSql = String.format("ORDER BY FIELD(id,%s)", join);
+        String lastSql = SqlConstants.splicing(SqlConstants.LAST_SQL_ORDER_BY_ID, join);
         LambdaQueryWrapper<Blog> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(Blog::getId, blogIdList)
                 .last(lastSql);
