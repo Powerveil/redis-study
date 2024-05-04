@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.constant.RedisConstants;
 import com.hmdp.constant.SystemConstants;
 import com.hmdp.dto.Result;
+import com.hmdp.dto.ScrollResult;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.Blog;
 import com.hmdp.entity.Follow;
@@ -19,12 +20,10 @@ import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -193,5 +192,51 @@ public class BlogManager {
         // 获取当前页数据
         List<Blog> records = page.getRecords();
         return Result.ok(records);
+    }
+
+    public Result queryBlogByFollow(Long lastId, Integer offset) {
+        // 1.获取当前用户
+        Long userId = UserHolder.getUser().getId();
+        // 2.查询收件箱
+        String key = RedisConstants.FEED_KEY + userId;
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet()
+                .reverseRangeByScoreWithScores(key, 0, lastId, offset, 2);
+        // 3.非空判断
+        if (Objects.isNull(typedTuples) || typedTuples.isEmpty()) {
+            return Result.ok();
+        }
+        // 4.解析数据：blogId, minId（时间戳），offset
+        List<Long> blogIdList = new ArrayList<>(typedTuples.size());
+        long minTime = 0;
+        int os = 1;
+        for (ZSetOperations.TypedTuple<String> typedTuple : typedTuples) {
+            // 4.1.获取id
+            blogIdList.add(Long.valueOf(typedTuple.getValue()));
+            // 4.2.获取分数（时间戳）
+            long time = typedTuple.getScore().longValue();
+            // 4.3.获取offset
+            if (time == minTime) {
+                os++;
+            } else {
+                minTime = time;
+                os = 1;
+            }
+        }
+        // 5.根据id查询blog
+        // todo 带优化
+        String join = StrUtil.join(",", blogIdList);
+        String lastSql = String.format("ORDER BY FIELD(id,%s)", join);
+        LambdaQueryWrapper<Blog> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Blog::getId, blogIdList)
+                .last(lastSql);
+        List<Blog> blogs = blogService.list(queryWrapper);
+        for (Blog blog : blogs) {
+            // 2.查询blog有关的用户
+            this.queryBlogUser(blog);
+            // 3.查询blog是否被点赞
+            this.isBlogLiked(blog);
+        }
+        ScrollResult result = new ScrollResult(blogs, minTime, os);
+        return Result.ok(result);
     }
 }
