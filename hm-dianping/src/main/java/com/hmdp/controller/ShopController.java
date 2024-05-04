@@ -5,8 +5,10 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
+import com.hmdp.manager.ShopManager;
 import com.hmdp.service.IShopService;
 import com.hmdp.constant.SystemConstants;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -22,9 +24,8 @@ import javax.annotation.Resource;
 @RestController
 @RequestMapping("/shop")
 public class ShopController {
-
-    @Resource
-    public IShopService shopService;
+    @Autowired
+    private ShopManager shopManager;
 
     /**
      * 根据id查询商铺信息
@@ -33,7 +34,7 @@ public class ShopController {
      */
     @GetMapping("/{id}")
     public Result queryShopById(@PathVariable("id") Long id) {
-        return shopService.queryById(id);
+        return shopManager.queryById(id);
     }
 
     /**
@@ -43,10 +44,7 @@ public class ShopController {
      */
     @PostMapping
     public Result saveShop(@RequestBody Shop shop) {
-        // 写入数据库
-        shopService.save(shop);
-        // 返回店铺id
-        return Result.ok(shop.getId());
+        return shopManager.saveShop(shop);
     }
 
     /**
@@ -56,7 +54,7 @@ public class ShopController {
      */
     @PutMapping
     public Result updateShop(@RequestBody Shop shop) {
-        return shopService.updateShop(shop);
+        return shopManager.updateShop(shop);
     }
 
     /**
@@ -68,14 +66,11 @@ public class ShopController {
     @GetMapping("/of/type")
     public Result queryShopByType(
             @RequestParam("typeId") Integer typeId,
-            @RequestParam(value = "current", defaultValue = "1") Integer current
+            @RequestParam(value = "current", defaultValue = "1") Integer current,
+            @RequestParam(value = "x", required = false) Double x,
+            @RequestParam(value = "y", required = false) Double y
     ) {
-        // 根据类型分页查询
-        Page<Shop> page = shopService.query()
-                .eq("type_id", typeId)
-                .page(new Page<>(current, SystemConstants.DEFAULT_PAGE_SIZE));
-        // 返回数据
-        return Result.ok(page.getRecords());
+        return shopManager.queryShopByType(typeId, current, x, y);
     }
 
     /**
@@ -89,11 +84,6 @@ public class ShopController {
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "current", defaultValue = "1") Integer current
     ) {
-        // 根据类型分页查询
-        Page<Shop> page = shopService.query()
-                .like(StrUtil.isNotBlank(name), "name", name)
-                .page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
-        // 返回数据
-        return Result.ok(page.getRecords());
+        return shopManager.queryShopByName(name, current);
     }
 }
