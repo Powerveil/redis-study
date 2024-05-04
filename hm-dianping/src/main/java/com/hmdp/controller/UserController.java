@@ -75,4 +75,8 @@ public class UserController {
     public Result sign(){
         return userManager.sign();
     }
+    @GetMapping("/sign/count")
+    public Result signCount(){
+        return userManager.signCount();
+    }
 }
