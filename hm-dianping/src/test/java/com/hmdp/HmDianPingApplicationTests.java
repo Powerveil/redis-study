@@ -100,5 +100,35 @@ class HmDianPingApplicationTests {
 
     }
 
+    @Test
+    void testHyperLogLog() {
+        String[] members = new String[1000];
+        int j = 0;
+        for (int i = 0; i < 1000000; i++) {
+            j = i % 1000;
+            members[j] = "member" + i;
+            if (j == 999) {
+                stringRedisTemplate.opsForHyperLogLog().add("hl2",members);
+            }
+        }
+        // 统计数量
+        Long count = stringRedisTemplate.opsForHyperLogLog().size("hl2");
+        System.out.println(count);
+        // 1000000
+        // 994035
+        // 0.994035
+
+
+        // 内存占用情况 info memory
+        // 插入前
+        //used_memory:2838424
+        //used_memory_human:2.71M
+        // 插入后
+        //used_memory:2853832
+        //used_memory_human:2.72M
+
+        // 15,408B
+        // 15.046875KB
+    }
 
 }
